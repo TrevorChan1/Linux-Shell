@@ -11,16 +11,18 @@
 	} \
 } while(0)
 
+//1. Main 
+
 int
 main(void)
 {
-	struct pipeline* my_pipeline = pipeline_build("ls\n");
-
+	struct pipeline* my_pipeline = pipeline_build("ls   test i am test\n");
+	
 	// Test that a pipeline was returned
 	TEST_ASSERT(my_pipeline != NULL);
 	TEST_ASSERT(!my_pipeline->is_background);
 	TEST_ASSERT(my_pipeline->commands != NULL);
-
+	
 	// Test the parsed args
 	TEST_ASSERT(strcmp("ls", my_pipeline->commands->command_args[0]) == 0);
 	TEST_ASSERT(my_pipeline->commands->command_args[1] == NULL);

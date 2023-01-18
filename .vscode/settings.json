@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "myshell_parser.h": "c",
+        "stdexcept": "c",
+        "string": "c"
+    }
+}
