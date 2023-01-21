@@ -17,52 +17,104 @@ struct pipeline *pipeline_build(const char *command_line)
 	command->redirect_in_path = NULL;
 	command->redirect_out_path = NULL;
 	pipe->commands = command;
+	pipe->is_background = false;
 	
 	//Copy command_line to a character pointer (convert const char * to char * for strtok)
 	char com[MAX_LINE_LENGTH];
 	strcpy(com, command_line);
+	char * currentCommand;
+	char * remainingCommand;
 
 	//Lexing: Iterate through command line characters and separate into tokens
-	char * delimiters = " \n\t\v\f\r";
-	char * delimiters1st = "|&";
-	char * delimiters2nd = "<>";
+	char * whitespace = " \n\t\v\f\r";
+	char * delimiters = "|&<>";
 
-	//Get string delimited by word tokens
-	char* token;
-	char* rest;
+	//Loop through whole command until the command is empty
+	currentCommand = strtok_r(com, delimiters, &remainingCommand);
+	while(currentCommand != NULL){
 
-	//token = strtok_r(com, delimiters1st, &rest);
-	
-	//if(rest != NULL){
-		//If there is a background or next pipeline command, recursively run the function on that character string
-		
-	//}
+		//Separate the currentCommand into word tokens (left side should always be a command)
+		char* token;
+		char* rest;
 
+		token = strtok_r(currentCommand, whitespace, &rest);
+		int num = 0;
 
+		while(token != NULL){
+			//Dynamically allocate the memory
+			char *argument = (char*) malloc(sizeof(char*));
+			strcpy(argument,token);
+			command->command_args[num++] = argument;
+			token = strtok_r(rest, whitespace, &rest);
+		}
+		currentCommand = NULL;
 
-	token = strtok_r(com, delimiters, &rest);
-	int num = 0;
-
-	while(token != NULL){
-		//Dynamically allocate the memory
-		char *argument = (char*) malloc(sizeof(char*));
-		strcpy(argument,token);
-		command->command_args[num++] = argument;
-		printf("%s\n", command->command_args[num-1]);
-		token = strtok_r(rest, delimiters, &rest);
+		//If the command was delimited by (includes) a |, &, <, or > then process accordingly
+		if(remainingCommand != NULL){
+			switch(remainingCommand[0]){
+				//Case |: Dynamically allocate a new pipeline command, set current pipeline command to point
+				//to this next one, and set current command being looked at to the rest of the command statement
+				case '|':
+				{
+					remainingCommand++;
+					struct pipeline_command * newCommand = (struct pipeline_command*) malloc(sizeof(struct pipeline_command));
+					command->next = newCommand;
+					command = newCommand;
+					currentCommand = remainingCommand;
+				}
+				//Case &: If there's more than just the & then create a new pipeline with background set to true
+				// If there isn't more, then set current pipeline to background true
+				case '&':
+				{
+					//Assume & is at the end and just set is_background for current command to true
+					// remainingCommand++;
+					// struct pipeline * back = pipeline_build(remainingCommand);
+					// back->is_background = true;
+					pipe->is_background = true;
+				}
+				//Case > or <: Set the remainder of the command to be the redirect_out_path
+				default:
+				{
+					char whichPath = remainingCommand[0];
+					while(isspace(*remainingCommand) && (*remainingCommand != '\0'))
+						remainingCommand++;
+					char * end = remainingCommand + strlen(remainingCommand) -1;
+					while(end > remainingCommand && isspace(*end)) end--;
+					end[1] = '\0';
+					char *path = (char*) malloc(sizeof(char*));
+					strcpy(path,remainingCommand);
+					if(whichPath == '<')
+						command->redirect_in_path = path;
+					else if(whichPath == '>')
+						command->redirect_out_path = path;
+				}
+			}
+		}
 	}
-	
-	
-
 	// TODO: Implement this function
 	//return NULL;
 	return pipe;
 }
 
+void command_free(struct pipeline_command *command){
+	//Recursively free all commands in the pipeline (first frees end and goes inward)
+	if(command->next != NULL){
+		command_free(command->next);
+		free(command->next);
+	}
+	if(command->redirect_in_path) free(command->redirect_in_path);
+	if(command->redirect_out_path) free(command->redirect_out_path);
+	int index = 0;
+	while(command->command_args[index] != NULL){
+		free(command->command_args[index++]);
+	}
+}
 
 //Function to free the dynamically allocated memory of an inputted pipeline structure
 void pipeline_free(struct pipeline *pipeline)
 {
-	//Free memory of inputted pipeline
-	//free(pipeline);
+	//Free pipeline command struct stored in the pipeline (if any)
+	if(pipeline->commands != NULL) command_free(pipeline->commands);
+	//Free pipeline struct
+	free(pipeline);
 }
