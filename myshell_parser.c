@@ -25,17 +25,22 @@ struct pipeline *pipeline_build(const char *command_line)
 	char * currentCommand;
 	char * remainingCommand;
 
+
 	//Lexing: Iterate through command line characters and separate into tokens
 	char * whitespace = " \n\t\v\f\r";
 	char * delimiters = "|&<>";
 
 	//Loop through whole command until the command is empty
 	currentCommand = strtok_r(com, delimiters, &remainingCommand);
+	int currentLen = strlen(currentCommand);
 	while(currentCommand != NULL){
 
 		//Separate the currentCommand into word tokens (left side should always be a command)
 		char* token;
 		char* rest;
+
+		char delim = command_line[currentLen];
+		printf("%c\n", delim);
 
 		token = strtok_r(currentCommand, whitespace, &rest);
 		int num = 0;
@@ -47,11 +52,12 @@ struct pipeline *pipeline_build(const char *command_line)
 			command->command_args[num++] = argument;
 			token = strtok_r(rest, whitespace, &rest);
 		}
-		currentCommand = NULL;
+		
 
-		//If the command was delimited by (includes) a |, &, <, or > then process accordingly
+
+		currentCommand = NULL;
 		if(remainingCommand != NULL){
-			switch(remainingCommand[0]){
+			switch(delim){
 				//Case |: Dynamically allocate a new pipeline command, set current pipeline command to point
 				//to this next one, and set current command being looked at to the rest of the command statement
 				case '|':
@@ -75,7 +81,6 @@ struct pipeline *pipeline_build(const char *command_line)
 				//Case > or <: Set the remainder of the command to be the redirect_out_path
 				default:
 				{
-					char whichPath = remainingCommand[0];
 					while(isspace(*remainingCommand) && (*remainingCommand != '\0'))
 						remainingCommand++;
 					char * end = remainingCommand + strlen(remainingCommand) -1;
@@ -83,9 +88,9 @@ struct pipeline *pipeline_build(const char *command_line)
 					end[1] = '\0';
 					char *path = (char*) malloc(sizeof(char*));
 					strcpy(path,remainingCommand);
-					if(whichPath == '<')
+					if(delim == '<')
 						command->redirect_in_path = path;
-					else if(whichPath == '>')
+					else if(delim == '>')
 						command->redirect_out_path = path;
 				}
 			}

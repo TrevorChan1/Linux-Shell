@@ -12,6 +12,32 @@
 } while(0)
 
 //1. Main 
+void pipeline_print(struct pipeline* pipe);
+
+int
+main(void)
+{
+	struct pipeline* my_pipeline = pipeline_build("ls <      test i am test\n");
+	pipeline_print(my_pipeline);
+	// // Test that a pipeline was returned
+	// TEST_ASSERT(my_pipeline != NULL);
+	// TEST_ASSERT(!my_pipeline->is_background);
+	// TEST_ASSERT(my_pipeline->commands != NULL);
+	
+	// // Test the parsed args
+	// TEST_ASSERT(strcmp("ls", my_pipeline->commands->command_args[0]) == 0);
+	// TEST_ASSERT(my_pipeline->commands->command_args[1] == NULL);
+
+	// // Test the redirect state
+	// TEST_ASSERT(my_pipeline->commands->redirect_in_path == NULL);
+	// TEST_ASSERT(my_pipeline->commands->redirect_out_path == NULL);
+
+	// // Test that there is only one parsed command in the pipeline
+	// TEST_ASSERT(my_pipeline->commands->next == NULL);
+
+	pipeline_free(my_pipeline);
+}
+
 void pipeline_print(struct pipeline* pipe){
 	if(pipe != NULL){
 		printf("Pipeline exists\n");
@@ -55,28 +81,4 @@ void pipeline_print(struct pipeline* pipe){
 	}
 	else
 		printf("Pipeline does not exist\n");
-}
-
-int
-main(void)
-{
-	struct pipeline* my_pipeline = pipeline_build("ls  | test i am test\n");
-	pipeline_print(my_pipeline);
-	// // Test that a pipeline was returned
-	// TEST_ASSERT(my_pipeline != NULL);
-	// TEST_ASSERT(!my_pipeline->is_background);
-	// TEST_ASSERT(my_pipeline->commands != NULL);
-	
-	// // Test the parsed args
-	// TEST_ASSERT(strcmp("ls", my_pipeline->commands->command_args[0]) == 0);
-	// TEST_ASSERT(my_pipeline->commands->command_args[1] == NULL);
-
-	// // Test the redirect state
-	// TEST_ASSERT(my_pipeline->commands->redirect_in_path == NULL);
-	// TEST_ASSERT(my_pipeline->commands->redirect_out_path == NULL);
-
-	// // Test that there is only one parsed command in the pipeline
-	// TEST_ASSERT(my_pipeline->commands->next == NULL);
-
-	pipeline_free(my_pipeline);
 }
