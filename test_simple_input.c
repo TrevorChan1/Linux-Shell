@@ -17,7 +17,7 @@ void pipeline_print(struct pipeline* pipe);
 int
 main(void)
 {
-	struct pipeline* my_pipeline = pipeline_build("ls <      test i am test\n");
+	struct pipeline* my_pipeline = pipeline_build("a b c d<e \n");
 	pipeline_print(my_pipeline);
 	// // Test that a pipeline was returned
 	// TEST_ASSERT(my_pipeline != NULL);
@@ -52,8 +52,8 @@ void pipeline_print(struct pipeline* pipe){
 
 			while(currentCommand != NULL){
 				int index = 0;
-				while(pipe->commands->command_args[index] != NULL){
-					printf("\t%s\n", pipe->commands->command_args[index++]);
+				while(currentCommand->command_args[index] != NULL){
+					printf("\t%s\n", currentCommand->command_args[index++]);
 				}
 				if(index == 0)
 					printf("\tNo commands\n");

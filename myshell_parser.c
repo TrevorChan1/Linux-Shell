@@ -32,15 +32,20 @@ struct pipeline *pipeline_build(const char *command_line)
 
 	//Loop through whole command until the command is empty
 	currentCommand = strtok_r(com, delimiters, &remainingCommand);
-	int currentLen = strlen(currentCommand);
+	int currentLen = 0;
 	while(currentCommand != NULL){
-
+		// printf("%s\n", currentCommand);
 		//Separate the currentCommand into word tokens (left side should always be a command)
 		char* token;
 		char* rest;
-
+		if(currentLen > 0)
+			currentLen += 1;
+		currentLen += strlen(currentCommand);
 		char delim = command_line[currentLen];
-		printf("%c\n", delim);
+		// printf("%d: ", currentLen);
+		// printf("%c\n", delim);
+
+		// printf("%s\n", remainingCommand);
 
 		token = strtok_r(currentCommand, whitespace, &rest);
 		int num = 0;
@@ -52,21 +57,18 @@ struct pipeline *pipeline_build(const char *command_line)
 			command->command_args[num++] = argument;
 			token = strtok_r(rest, whitespace, &rest);
 		}
-		
-
-
-		currentCommand = NULL;
 		if(remainingCommand != NULL){
 			switch(delim){
 				//Case |: Dynamically allocate a new pipeline command, set current pipeline command to point
 				//to this next one, and set current command being looked at to the rest of the command statement
 				case '|':
 				{
-					remainingCommand++;
 					struct pipeline_command * newCommand = (struct pipeline_command*) malloc(sizeof(struct pipeline_command));
 					command->next = newCommand;
 					command = newCommand;
 					currentCommand = remainingCommand;
+					currentCommand = strtok_r(currentCommand, delimiters, &remainingCommand);
+					break;
 				}
 				//Case &: If there's more than just the & then create a new pipeline with background set to true
 				// If there isn't more, then set current pipeline to background true
@@ -77,6 +79,8 @@ struct pipeline *pipeline_build(const char *command_line)
 					// struct pipeline * back = pipeline_build(remainingCommand);
 					// back->is_background = true;
 					pipe->is_background = true;
+					currentCommand = NULL;
+					break;
 				}
 				//Case > or <: Set the remainder of the command to be the redirect_out_path
 				default:
@@ -92,6 +96,8 @@ struct pipeline *pipeline_build(const char *command_line)
 						command->redirect_in_path = path;
 					else if(delim == '>')
 						command->redirect_out_path = path;
+					currentCommand = NULL;
+					break;
 				}
 			}
 		}
