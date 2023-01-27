@@ -122,11 +122,9 @@ struct pipeline *pipeline_build(const char *command_line)
 					}
 					currentCommand = strtok_r(remainingCommand, delimiters, &remainingCommand);
 					
-					printf("h:%sh\n",currentCommand);
 					currentLen += remainingCommand- start - 2;
 					//Make currentCommand empty to move onto the next delimiter in the while loop
 					currentCommand=" ";
-					printf("%d\n", currentLen);
 					break;
 
 				}
@@ -140,16 +138,17 @@ struct pipeline *pipeline_build(const char *command_line)
 
 					command->redirect_out_path = path;
 
-					currentCommand = remainingCommand;
 					//Handle cases where it is immediately followed by an &
 					if(remainingCommand[0] == '&'){
 						pipe->is_background= true;
 						currentCommand = NULL;
 						break;
 					}
-					currentCommand = strtok_r(currentCommand, delimiters, &remainingCommand);
-					currentCommand = remainingCommand;
-					currentLen += currentCommand - start;
+					currentCommand = strtok_r(remainingCommand, delimiters, &remainingCommand);
+					
+					currentLen += remainingCommand- start - 2;
+					//Make currentCommand empty to move onto the next delimiter in the while loop
+					currentCommand=" ";
 					break;
 				}
 				default:
