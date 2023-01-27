@@ -17,9 +17,16 @@ void pipeline_print(struct pipeline* pipe);
 int
 main(void)
 {
-	struct pipeline* my_pipeline = pipeline_build("| test");
-	// struct pipeline* my_pipeline = pipeline_build("ls|wc -l > counts.txt\n");
+	// struct pipeline* my_pipeline = pipeline_build("| test");
+	// struct pipeline* my_pipeline = pipeline_build("ls|wc -l > counts.txt\n woo test &");
 	// struct pipeline* my_pipeline = pipeline_build("ls -l | test test 2 theee > woo.txt \n \t");
+	struct pipeline* my_pipeline = pipeline_build("a b< d -ls\n| test");
+	// struct pipeline* my_pipeline = pipeline_build("arg1 <out a&\n");
+	// struct pipeline* my_pipeline = pipeline_build(" a      < -ls    > arg1\n");
+	// struct pipeline* my_pipeline = pipeline_build("a  b < arg > d | arg1 arg2&\n");
+	// struct pipeline* my_pipeline = pipeline_build("ab cd e< fg&\n");
+	// struct pipeline* my_pipeline = pipeline_build("arg1 c>a&\n");
+	// struct pipeline* my_pipeline = pipeline_build("arg1 c<ab >b\n");
 
 	pipeline_print(my_pipeline);
 	// // Test that a pipeline was returned

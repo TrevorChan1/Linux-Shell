@@ -12,7 +12,6 @@ struct pipeline *pipeline_build(const char *command_line)
 	struct pipeline * pipe = (struct pipeline *) malloc(sizeof(struct pipeline));
 	struct pipeline_command * command = (struct pipeline_command*) malloc(sizeof(struct pipeline_command));
 	char * args = (char*) malloc(sizeof(char*));
-	command->redirect_in_path = "test";
 	command->command_args[0] = args;
 	command->redirect_in_path = NULL;
 	command->redirect_out_path = NULL;
@@ -33,21 +32,29 @@ struct pipeline *pipeline_build(const char *command_line)
 	//Loop through whole command until the command is empty
 	currentCommand = strtok_r(com, delimiters, &remainingCommand);
 	int currentLen = 0;
+	
 	while(currentCommand != NULL){
+		
+		// printf("%s\n",currentCommand);
+		
+		//printf("%d\n",strlen(currentCommand));
 		// printf("%s\n", currentCommand);
 		//Separate the currentCommand into word tokens (left side should always be a command)
 		char* token;
 		char* rest;
 		if(currentLen > 0)
 			currentLen += 1;
+		printf("here\n");
 		currentLen += strlen(currentCommand);
+		printf("Len: %d\n", strlen(currentCommand));
 		char delim = command_line[currentLen];
-		// printf("%d: ", currentLen);
-		// printf("%c\n", delim);
+		
+		printf("%d: ", currentLen);
+		printf("%c\n", delim);
 
 		// printf("%s\n", remainingCommand);
 		
-		if(strlen(currentCommand)>0){
+		// if(strlen(currentCommand)>0){
 			token = strtok_r(currentCommand, whitespace, &rest);
 			int num = 0;
 			while(token != NULL){
@@ -57,25 +64,31 @@ struct pipeline *pipeline_build(const char *command_line)
 				command->command_args[num++] = argument;
 				token = strtok_r(rest, whitespace, &rest);
 			}
-		}
-
+		// }
+		// printf("%c\n",delim);
 		if(remainingCommand != NULL){
 			switch(delim){
 				//Case |: Dynamically allocate a new pipeline command, set current pipeline command to point
 				//to this next one, and set current command being looked at to the rest of the command statement
 				case '|':
 				{
-					if(command->command_args[0] != NULL){
+					// if(command->command_args[0] != NULL){
 						struct pipeline_command * newCommand = (struct pipeline_command*) malloc(sizeof(struct pipeline_command));
 						command->next = newCommand;
 						command = newCommand;
 						currentCommand = remainingCommand;
+						//Handle case of i
+						if(remainingCommand[0] == '&'){
+							pipe->is_background= true;
+							currentCommand = NULL;
+							break;
+						}
 						currentCommand = strtok_r(currentCommand, delimiters, &remainingCommand);
-					}
-					else{
-						printf("Syntax error near unexpected token '|'\n)");
-						return NULL;
-					}
+					// }
+					// else{
+					// 	printf("Syntax error near unexpected token '|'\n)");
+					// 	return NULL;
+					// }
 					break;
 				}
 				//Case &: If there's more than just the & then create a new pipeline with background set to true
@@ -91,24 +104,61 @@ struct pipeline *pipeline_build(const char *command_line)
 					break;
 				}
 				//Case > or <: Set the remainder of the command to be the redirect_out_path
-				default:
+				case '<':
 				{
-					while(isspace(*remainingCommand) && (*remainingCommand != '\0'))
-						remainingCommand++;
-					char * end = remainingCommand + strlen(remainingCommand) -1;
-					while(end > remainingCommand && isspace(*end)) end--;
-					end[1] = '\0';
+					char * start = remainingCommand;
+
+					char * p = strtok_r(remainingCommand, whitespace, &remainingCommand);
 					char *path = (char*) malloc(sizeof(char*));
-					strcpy(path,remainingCommand);
-					if(delim == '<')
-						command->redirect_in_path = path;
-					else if(delim == '>')
-						command->redirect_out_path = path;
-					currentCommand = NULL;
+					strcpy(path,p);
+
+					command->redirect_in_path = path;
+
+					//Handle cases where it is immediately followed by an &
+					if(remainingCommand[0] == '&'){
+						pipe->is_background= true;
+						currentCommand = NULL;
+						break;
+					}
+					currentCommand = strtok_r(remainingCommand, delimiters, &remainingCommand);
+					
+					printf("h:%sh\n",currentCommand);
+					currentLen += remainingCommand- start - 2;
+					//Make currentCommand empty to move onto the next delimiter in the while loop
+					currentCommand=" ";
+					printf("%d\n", currentLen);
+					break;
+
+				}
+				case '>':{
+					
+					char * start = remainingCommand;
+
+					char * p = strtok_r(remainingCommand, whitespace, &remainingCommand);
+					char *path = (char*) malloc(sizeof(char*));
+					strcpy(path,p);
+
+					command->redirect_out_path = path;
+
+					currentCommand = remainingCommand;
+					//Handle cases where it is immediately followed by an &
+					if(remainingCommand[0] == '&'){
+						pipe->is_background= true;
+						currentCommand = NULL;
+						break;
+					}
+					currentCommand = strtok_r(currentCommand, delimiters, &remainingCommand);
+					currentCommand = remainingCommand;
+					currentLen += currentCommand - start;
 					break;
 				}
+				default:
+					currentCommand = NULL;
+					break;
 			}
 		}
+		else
+			currentCommand = NULL;
 	}
 	// TODO: Implement this function
 	//return NULL;
