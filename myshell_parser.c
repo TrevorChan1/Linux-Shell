@@ -108,27 +108,42 @@ struct pipeline *pipeline_build(const char *command_line)
 				{
 					char * start = remainingCommand;
 
-					char * p = strtok_r(remainingCommand, whitespace, &remainingCommand);
+					//Cut remaining command into the segment until the next non-word token
+					currentCommand = strtok_r(remainingCommand, delimiters, &remainingCommand);
+
+					//Get the first word token in the first segment
+					char * p = strtok(currentCommand, whitespace);
 					char *path = (char*) malloc(sizeof(char*));
 					strcpy(path,p);
 
+					//Set redirect path to the dynamically allocated path string
 					command->redirect_in_path = path;
 
-					//Handle cases where it is immediately followed by an &
-					if(remainingCommand[0] == '&'){
-						pipe->is_background= true;
-						currentCommand = NULL;
-						break;
-					}
-					currentCommand = strtok_r(remainingCommand, delimiters, &remainingCommand);
-					if(remainingCommand == NULL){
-						currentCommand = NULL;
+					//If there are more tokens ahead, set it so the current command is empty and prepare to execute next part
+					if(remainingCommand != NULL){
+						currentCommand = " ";	//Prevent parser from exiting and from overwriting arguments
+						currentLen += remainingCommand - start - 2;
 					}
 					else{
-						currentLen += remainingCommand- start - 2;
-						//Make currentCommand empty to move onto the next delimiter in the while loop
-						currentCommand=" ";
+						currentCommand = NULL;
 					}
+
+					//Handle cases where it is immediately followed by an &
+					// if(remainingCommand[0] == '&'){
+					// 	pipe->is_background= true;
+					// 	currentCommand = NULL;
+					// 	break;
+					// }
+
+					// currentCommand = strtok_r(remainingCommand, delimiters, &remainingCommand);
+					// if(remainingCommand == NULL){
+					// 	currentCommand = NULL;
+					// }
+					// else{
+					// 	currentLen += remainingCommand- start - 2;
+					// 	//Make currentCommand empty to move onto the next delimiter in the while loop
+					// 	currentCommand=" ";
+					// }
 					break;
 
 				}
@@ -136,26 +151,24 @@ struct pipeline *pipeline_build(const char *command_line)
 					
 					char * start = remainingCommand;
 
-					char * p = strtok_r(remainingCommand, whitespace, &remainingCommand);
+					//Cut remaining command into the segment until the next non-word token
+					currentCommand = strtok_r(remainingCommand, delimiters, &remainingCommand);
+
+					//Get the first word token in the first segment
+					char * p = strtok(currentCommand, whitespace);
 					char *path = (char*) malloc(sizeof(char*));
 					strcpy(path,p);
 
+					//Set redirect path to the dynamically allocated path string
 					command->redirect_out_path = path;
 
-					//Handle cases where it is immediately followed by an &
-					if(remainingCommand[0] == '&'){
-						pipe->is_background= true;
-						currentCommand = NULL;
-						break;
-					}
-					currentCommand = strtok_r(remainingCommand, delimiters, &remainingCommand);
-					if(remainingCommand == NULL){
-						currentCommand = NULL;
+					//If there are more tokens ahead, set it so the current command is empty and prepare to execute next part
+					if(remainingCommand != NULL){
+						currentCommand = " ";	//Prevent parser from exiting and from overwriting arguments
+						currentLen += remainingCommand - start - 2;
 					}
 					else{
-						currentLen += remainingCommand- start - 2;
-						//Make currentCommand empty to move onto the next delimiter in the while loop
-						currentCommand=" ";
+						currentCommand = NULL;
 					}
 					break;
 				}
