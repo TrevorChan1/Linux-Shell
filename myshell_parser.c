@@ -46,35 +46,43 @@ struct pipeline *pipeline_build(const char *command_line)
 		// printf("%c\n", delim);
 
 		// printf("%s\n", remainingCommand);
-
-		token = strtok_r(currentCommand, whitespace, &rest);
-		int num = 0;
-
-		while(token != NULL){
-			//Dynamically allocate the memory
-			char *argument = (char*) malloc(sizeof(char*));
-			strcpy(argument,token);
-			command->command_args[num++] = argument;
-			token = strtok_r(rest, whitespace, &rest);
+		
+		if(strlen(currentCommand)>0){
+			token = strtok_r(currentCommand, whitespace, &rest);
+			int num = 0;
+			while(token != NULL){
+				//Dynamically allocate the memory
+				char *argument = (char*) malloc(sizeof(char*));
+				strcpy(argument,token);
+				command->command_args[num++] = argument;
+				token = strtok_r(rest, whitespace, &rest);
+			}
 		}
+
 		if(remainingCommand != NULL){
 			switch(delim){
 				//Case |: Dynamically allocate a new pipeline command, set current pipeline command to point
 				//to this next one, and set current command being looked at to the rest of the command statement
 				case '|':
 				{
-					struct pipeline_command * newCommand = (struct pipeline_command*) malloc(sizeof(struct pipeline_command));
-					command->next = newCommand;
-					command = newCommand;
-					currentCommand = remainingCommand;
-					currentCommand = strtok_r(currentCommand, delimiters, &remainingCommand);
+					if(command->command_args[0] != NULL){
+						struct pipeline_command * newCommand = (struct pipeline_command*) malloc(sizeof(struct pipeline_command));
+						command->next = newCommand;
+						command = newCommand;
+						currentCommand = remainingCommand;
+						currentCommand = strtok_r(currentCommand, delimiters, &remainingCommand);
+					}
+					else{
+						printf("Syntax error near unexpected token '|'\n)");
+						return NULL;
+					}
 					break;
 				}
 				//Case &: If there's more than just the & then create a new pipeline with background set to true
 				// If there isn't more, then set current pipeline to background true
 				case '&':
 				{
-					//Assume & is at the end and just set is_background for current command to true
+					//Assume & is at the end and just set is_background for current command to true!
 					// remainingCommand++;
 					// struct pipeline * back = pipeline_build(remainingCommand);
 					// back->is_background = true;
