@@ -44,7 +44,7 @@ struct pipeline *pipeline_build(const char *command_line)
 		char* rest;
 		if(currentLen > 0)
 			currentLen += 1;
-		printf("here\n");
+		// printf("here\n");
 		currentLen += strlen(currentCommand);
 		printf("Len: %d\n", strlen(currentCommand));
 		char delim = command_line[currentLen];
@@ -121,10 +121,14 @@ struct pipeline *pipeline_build(const char *command_line)
 						break;
 					}
 					currentCommand = strtok_r(remainingCommand, delimiters, &remainingCommand);
-					
-					currentLen += remainingCommand- start - 2;
-					//Make currentCommand empty to move onto the next delimiter in the while loop
-					currentCommand=" ";
+					if(remainingCommand == NULL){
+						currentCommand = NULL;
+					}
+					else{
+						currentLen += remainingCommand- start - 2;
+						//Make currentCommand empty to move onto the next delimiter in the while loop
+						currentCommand=" ";
+					}
 					break;
 
 				}
@@ -145,10 +149,14 @@ struct pipeline *pipeline_build(const char *command_line)
 						break;
 					}
 					currentCommand = strtok_r(remainingCommand, delimiters, &remainingCommand);
-					
-					currentLen += remainingCommand- start - 2;
-					//Make currentCommand empty to move onto the next delimiter in the while loop
-					currentCommand=" ";
+					if(remainingCommand == NULL){
+						currentCommand = NULL;
+					}
+					else{
+						currentLen += remainingCommand- start - 2;
+						//Make currentCommand empty to move onto the next delimiter in the while loop
+						currentCommand=" ";
+					}
 					break;
 				}
 				default:
