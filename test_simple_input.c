@@ -28,6 +28,7 @@ main(void)
 	// struct pipeline* my_pipeline = pipeline_build("ab cd e< fg&\n");
 	// struct pipeline* my_pipeline = pipeline_build("arg1 c>a&\n");
 	// struct pipeline* my_pipeline = pipeline_build("arg1 c<ab >b\n");
+	// struct pipeline* my_pipeline = pipeline_build("arg<&");
 
 	pipeline_print(my_pipeline);
 	// // Test that a pipeline was returned
