@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
+#include <sys/wait.h>
 
 #define TEST_ASSERT(x) do { \
 	if (!(x)) { \
@@ -14,12 +16,73 @@
 //1. Main 
 void pipeline_print(struct pipeline* pipe);
 
-int
-main(void)
+int main(int argc, char **argv)
 {
+	//Initialization
+	bool print_shell = true;
+	char command[MAX_LINE_LENGTH];
+
+	//See if -n is an argument
+	if(argc > 1){
+		for(int i = 1; i < argc; i++){
+			if(strcmp(argv[i],"-n") == 0)
+				print_shell = false;
+		}
+	}
+
+	//Main loop
+	while(1){
+		//Only print my_shell$ if -n is not an argument
+		if(print_shell)
+			printf("my_shell$");
+		
+		//Grab the command from the user, if fgets returns NULL that means Ctrl-D => Stop the command line
+		if(fgets(command, MAX_LINE_LENGTH, stdin) == NULL){
+			printf("\n");
+			break;
+		}
+		//Build a pipeline struct based on the user's command input
+		struct pipeline* my_pipeline = pipeline_build(command);
+
+		//If a valid pipeline was created, then fork and execute the command
+		if(my_pipeline){
+			// pipeline_print(my_pipeline);
+			pid_t m = fork();
+			struct pipeline_command * currentCommand = my_pipeline->commands;
+			//Parent process
+			if(m){
+				//If the current child process is NOT a background process, wait for it to finish before continuing
+				if(!my_pipeline->is_background)
+					waitpid(m, 0,0);
+			}
+			//Child process
+			else{
+				while(currentCommand != NULL){
+					pid_t n = fork();
+					if(n){
+						waitpid(n,0,0);
+						currentCommand = currentCommand->next;
+					}
+					else
+						if(execvp(currentCommand->command_args[0], currentCommand->command_args)){
+							printf("ERROR: %s: No such file or directory\n", currentCommand->command_args[0]);
+							return -1;
+						}
+							
+				}
+				return 0;
+			}
+			pipeline_free(my_pipeline);
+		}
+	}
+}
+
+
+/*
+int main(){
 	// struct pipeline* my_pipeline = pipeline_build("| test");
 	// struct pipeline* my_pipeline = pipeline_build("| &test");
-	struct pipeline* my_pipeline = pipeline_build("ls|wc -l > counts.txt\n woo test &");
+	// struct pipeline* my_pipeline = pipeline_build("ls|wc -l > counts.txt\n woo test &");
 	// struct pipeline* my_pipeline = pipeline_build("ls -l | test test 2 theee > woo.txt \n \t");
 	// struct pipeline* my_pipeline = pipeline_build("a b< d -ls\n| test");
 	// struct pipeline* my_pipeline = pipeline_build("arg1 <out a&\n");
@@ -29,7 +92,8 @@ main(void)
 	// struct pipeline* my_pipeline = pipeline_build("arg1 c>a&\n");
 	// struct pipeline* my_pipeline = pipeline_build("arg1 c<ab >b\n");
 	// struct pipeline* my_pipeline = pipeline_build("arg<&");
-
+	// struct pipeline* my_pipeline = pipeline_build("ls");
+	struct pipeline * my_pipeline = pipeline_build("ls | ls");
 	pipeline_print(my_pipeline);
 	// // Test that a pipeline was returned
 	// TEST_ASSERT(my_pipeline != NULL);
@@ -46,10 +110,9 @@ main(void)
 
 	// // Test that there is only one parsed command in the pipeline
 	// TEST_ASSERT(my_pipeline->commands->next == NULL);
-
 	pipeline_free(my_pipeline);
 }
-
+*/
 void pipeline_print(struct pipeline* pipe){
 	if(pipe != NULL){
 		printf("Pipeline exists\n");

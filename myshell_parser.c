@@ -8,6 +8,23 @@
 //Function to convert a character of the command line into a pipeline struct with dynamically allocated memory
 struct pipeline *pipeline_build(const char *command_line)
 {
+
+	//Lexing: Iterate through command line characters and separate into tokens
+	char * whitespace = " \n\t\v\f\r";
+	char * delimiters = "|&<>";
+
+	//Copy command_line to a character pointer (convert const char * to char * for strtok)
+	char com[MAX_LINE_LENGTH];
+	strcpy(com, command_line);
+	char * currentCommand;
+	char * remainingCommand;
+
+	//If the command is empty, return NULL (don't create a pipeline)
+	if(strtok(com,whitespace) == NULL){
+		return NULL;
+	}
+	strcpy(com, command_line);
+	
 	//Dynamically allocate memory for the output pipeline struct & initialize values
 	struct pipeline * pipe = (struct pipeline *) malloc(sizeof(struct pipeline));
 	struct pipeline_command * command = (struct pipeline_command*) malloc(sizeof(struct pipeline_command));
@@ -17,16 +34,6 @@ struct pipeline *pipeline_build(const char *command_line)
 	command->redirect_out_path = NULL;
 	pipe->commands = command;
 	pipe->is_background = false;
-	
-	//Copy command_line to a character pointer (convert const char * to char * for strtok)
-	char com[MAX_LINE_LENGTH];
-	strcpy(com, command_line);
-	char * currentCommand;
-	char * remainingCommand;
-
-	//Lexing: Iterate through command line characters and separate into tokens
-	char * whitespace = " \n\t\v\f\r";
-	char * delimiters = "|&<>";
 
 	//Grab first string delimited by a non-word token
 	currentCommand = strtok_r(com, delimiters, &remainingCommand);
