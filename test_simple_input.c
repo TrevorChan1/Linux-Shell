@@ -63,40 +63,50 @@ int main(int argc, char **argv)
 					printf("ERROR: Failed to create pipe\n");
 					return -2;
 				}
-
+				//Initialize pid_t value to keep track of last child
+				pid_t n;
+				
 				//Loop through each command in the pipeline
 				while(currentCommand != NULL){
 
-					//Create child process to run command
-					pid_t n = fork();
-
+					//Create new child process to run each command in pipeline
+					//Parent process: Create new fork for next command in pipeline then move on to next iteration of loop
+					n = fork();
+	
 					//Child Process: Set read and write as needed then execute command
 					if(n == 0){
 						//If current command is not the first in the pipeline, set read from stdin to pipe read
 						if(currentCommand != my_pipeline->commands){
-							dup2(pipeline[0], 0); //Replace stdin with pipe read
-							close(pipeline[1]);
-							close(pipeline[0]);
+							dup2(pipeline[0], STDIN_FILENO); //Replace stdin with pipe read
 						}
 						
 						//If current command is not the last in the pipeline, set read from stdout to pipe write
 						if(currentCommand->next != NULL){
-							dup2(pipeline[1], 1);	//Replace stdout with pipe write
-							close(pipeline[0]);	//Close the pipe ends not being used
-							close(pipeline[1]);
+							dup2(pipeline[1], STDOUT_FILENO);	//Replace stdout with pipe write
 						}
-						
+
+						//Close any part of the pipeline that is not being used
+						close(pipeline[1]);
+						close(pipeline[0]);
+
+						//Execute command, print error message if not a correct command
 						if(execvp(currentCommand->command_args[0], currentCommand->command_args)){
 							printf("ERROR: %s: No such file or directory\n", currentCommand->command_args[0]);
 							return -1;
 						}
+						
 					}
 
 					//Parent process: Wait for child process to end then set currentCommand to next in pipeline
-					waitpid(n,0,0);
 					currentCommand = currentCommand->next;
-							
+					
 				}
+				//After command pipeline is done executing, close pipeline and wait for commands to finish running
+				close(pipeline[0]);
+				close(pipeline[1]);
+				waitpid(n,0,0);
+
+				//Exit with return code 0
 				return 0;
 			}
 			pipeline_free(my_pipeline);
