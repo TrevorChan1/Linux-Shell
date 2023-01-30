@@ -4,6 +4,8 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/wait.h>
+#include <fcntl.h>
+
 
 #define TEST_ASSERT(x) do { \
 	if (!(x)) { \
@@ -72,7 +74,8 @@ int main(int argc, char **argv)
 					//Create new child process to run each command in pipeline
 					//Parent process: Create new fork for next command in pipeline then move on to next iteration of loop
 					n = fork();
-	
+					int fileIn = -1;
+					int fileOut = -1;
 					//Child Process: Set read and write as needed then execute command
 					if(n == 0){
 						//If current command is not the first in the pipeline, set read from stdin to pipe read
@@ -82,7 +85,14 @@ int main(int argc, char **argv)
 						//If first command in pipeline has a redirect_in_path, set pipeline input to that
 						else{
 							if(currentCommand->redirect_in_path){
-								dup2(currentCommand->redirect_in_path, STDIN_FILENO);
+								//Open the redirect_in_path file as the input for the first command
+								fileIn = open(currentCommand->redirect_in_path, O_RDONLY);
+								if(fileIn == -1){
+									printf("ERROR: %s: No such file or directory\n", currentCommand->redirect_in_path);
+									exit(-1);
+								}
+								//Replace stdin with reading that file
+								dup2(fileIn, STDIN_FILENO);
 							}
 						}
 						
@@ -93,7 +103,14 @@ int main(int argc, char **argv)
 						//If last command in pipeline has a redirect_out_path, set pipeline output to that
 						else{
 							if(currentCommand->redirect_out_path){
-								dup2(currentCommand->redirect_out_path,STDOUT_FILENO);
+								//Open the redirect_out_path file as the output for the last command
+								fileOut = open(currentCommand->redirect_in_path, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+								if(fileOut == -1){
+									printf("ERROR: %s: No such file or directory\n", currentCommand->redirect_out_path);
+									exit(-1);
+								}
+								//Replace stdin with reading that file
+								dup2(fileOut, STDOUT_FILENO);
 							}
 						}
 
