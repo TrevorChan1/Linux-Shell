@@ -79,10 +79,22 @@ int main(int argc, char **argv)
 						if(currentCommand != my_pipeline->commands){
 							dup2(pipeline[0], STDIN_FILENO); //Replace stdin with pipe read
 						}
+						//If first command in pipeline has a redirect_in_path, set pipeline input to that
+						else{
+							if(currentCommand->redirect_in_path){
+								dup2(currentCommand->redirect_in_path, STDIN_FILENO);
+							}
+						}
 						
 						//If current command is not the last in the pipeline, set read from stdout to pipe write
 						if(currentCommand->next != NULL){
 							dup2(pipeline[1], STDOUT_FILENO);	//Replace stdout with pipe write
+						}
+						//If last command in pipeline has a redirect_out_path, set pipeline output to that
+						else{
+							if(currentCommand->redirect_out_path){
+								dup2(currentCommand->redirect_out_path,STDOUT_FILENO);
+							}
 						}
 
 						//Close any part of the pipeline that is not being used

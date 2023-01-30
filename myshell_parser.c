@@ -24,7 +24,7 @@ struct pipeline *pipeline_build(const char *command_line)
 		return NULL;
 	}
 	strcpy(com, command_line);
-	
+
 	//Dynamically allocate memory for the output pipeline struct & initialize values
 	struct pipeline * pipe = (struct pipeline *) malloc(sizeof(struct pipeline));
 	struct pipeline_command * command = (struct pipeline_command*) malloc(sizeof(struct pipeline_command));
@@ -105,15 +105,16 @@ struct pipeline *pipeline_build(const char *command_line)
 					//If empty, then return nothing and print an error
 					if(p == NULL){
 						pipeline_free(pipe);
-						printf("syntax error near unexpected token '%s'\n",p);
+						printf("ERROR: syntax error near unexpected token '%s'\n",p);
 						return NULL;
 					}
 					char *path = (char*) malloc(sizeof(char*));
 					strcpy(path,p);
 
 					//Set redirect path to the dynamically allocated path string (based on delimiter)
-					if(delim == '>')
+					if(delim == '>'){
 						command->redirect_out_path = path;
+					}
 					else if(delim == '<')
 						command->redirect_in_path = path;
 
