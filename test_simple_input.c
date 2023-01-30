@@ -57,17 +57,44 @@ int main(int argc, char **argv)
 			}
 			//Child process
 			else{
+				//Initialize pipeline of commands
+				int pipeline[2];
+				if(pipe(pipeline) == -1){
+					printf("ERROR: Failed to create pipe\n");
+					return -2;
+				}
+
+				//Loop through each command in the pipeline
 				while(currentCommand != NULL){
+
+					//Create child process to run command
 					pid_t n = fork();
-					if(n){
-						waitpid(n,0,0);
-						currentCommand = currentCommand->next;
-					}
-					else
+
+					//Child Process: Set read and write as needed then execute command
+					if(n == 0){
+						//If current command is not the first in the pipeline, set read from stdin to pipe read
+						if(currentCommand != my_pipeline->commands){
+							dup2(pipeline[0], 0); //Replace stdin with pipe read
+							close(pipeline[1]);
+							close(pipeline[0]);
+						}
+						
+						//If current command is not the last in the pipeline, set read from stdout to pipe write
+						if(currentCommand->next != NULL){
+							dup2(pipeline[1], 1);	//Replace stdout with pipe write
+							close(pipeline[0]);	//Close the pipe ends not being used
+							close(pipeline[1]);
+						}
+						
 						if(execvp(currentCommand->command_args[0], currentCommand->command_args)){
 							printf("ERROR: %s: No such file or directory\n", currentCommand->command_args[0]);
 							return -1;
 						}
+					}
+
+					//Parent process: Wait for child process to end then set currentCommand to next in pipeline
+					waitpid(n,0,0);
+					currentCommand = currentCommand->next;
 							
 				}
 				return 0;
