@@ -113,11 +113,29 @@ struct pipeline *pipeline_build(const char *command_line)
 
 					//Set redirect path to the dynamically allocated path string (based on delimiter)
 					if(delim == '>'){
-						command->redirect_out_path = path;
+						//If command tries to redirect out to anything other than the last command in a pipe, return NULL
+						if(remainingCommand == NULL){
+							command->redirect_out_path = path;
+						}
+						//If command is not last command in pipeline, print error and return NULL
+						else{
+							printf("ERROR: syntax error near unexpected token '>'\n");
+							pipeline_free(pipe);
+							return NULL;
+						}
 					}
-					else if(delim == '<')
-						command->redirect_in_path = path;
-
+					else if(delim == '<'){
+						//If command tries to redirect in from anything other than the first command in a pipe, return NULL
+						if(command == pipe->commands){
+							command->redirect_out_path = path;
+						}
+						//If command is not first command in pipeline, print error and return NULL
+						else{
+							printf("ERROR: syntax error near unexpected token '<'\n");
+							pipeline_free(pipe);
+							return NULL;
+						}
+					}
 					//If there are more tokens ahead, set it so the current command is empty and prepare to execute next part
 					if(remainingCommand != NULL){
 						currentCommand = " ";	//Prevent parser from exiting and from overwriting arguments
