@@ -127,7 +127,7 @@ struct pipeline *pipeline_build(const char *command_line)
 					else if(delim == '<'){
 						//If command tries to redirect in from anything other than the first command in a pipe, return NULL
 						if(command == pipe->commands){
-							command->redirect_out_path = path;
+							command->redirect_in_path = path;
 						}
 						//If command is not first command in pipeline, print error and return NULL
 						else{

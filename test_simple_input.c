@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <sys/wait.h>
 #include <fcntl.h>
+#include <signal.h>
 
 
 #define TEST_ASSERT(x) do { \
@@ -14,6 +15,11 @@
 	       	abort(); \
 	} \
 } while(0)
+
+
+void kill_zombies(int signum){
+	printf("Test\n");
+}
 
 //1. Main 
 void pipeline_print(struct pipeline* pipe);
@@ -40,6 +46,18 @@ int main(int argc, char **argv)
 		
 		//Grab the command from the user, if fgets returns NULL that means Ctrl-D => Stop the command line
 		if(fgets(command, MAX_LINE_LENGTH, stdin) == NULL){
+			//Initialize the new and old actions for sigaction
+			struct sigaction new_action, old_action;
+			new_action.sa_handler = kill_zombies;
+			sigemptyset(&new_action.sa_mask);
+			new_action.sa_flags = 0;
+
+			//Wait for the SIGCHLD signal (and replace the new action if it's not set to ignore signal)
+			sigaction(SIGCHLD, NULL, &old_action);
+			if(old_action.sa_handler != SIG_IGN){
+				sigaction(SIGCHLD, &new_action, NULL);
+			}
+
 			printf("\n");
 			break;
 		}
@@ -74,10 +92,10 @@ int main(int argc, char **argv)
 					//Create new child process to run each command in pipeline
 					//Parent process: Create new fork for next command in pipeline then move on to next iteration of loop
 					n = fork();
-					int fileIn = -1;
-					int fileOut = -1;
+
 					//Child Process: Set read and write as needed then execute command
 					if(n == 0){
+						
 						//If current command is not the first in the pipeline, set read from stdin to pipe read
 						if(currentCommand != my_pipeline->commands){
 							dup2(pipeline[0], STDIN_FILENO); //Replace stdin with pipe read
@@ -85,8 +103,8 @@ int main(int argc, char **argv)
 						//If first command in pipeline has a redirect_in_path, set pipeline input to that
 						else{
 							if(currentCommand->redirect_in_path){
-								//Open the redirect_in_path file as the input for the first command
-								fileIn = open(currentCommand->redirect_in_path, O_RDONLY);
+								//Open the redirect_in_path file as the input for the first command (ignoring closing the file since will close when process ends)
+								int fileIn = open(currentCommand->redirect_in_path, O_RDONLY);
 								if(fileIn == -1){
 									printf("ERROR: %s: No such file or directory\n", currentCommand->redirect_in_path);
 									exit(-1);
@@ -103,9 +121,11 @@ int main(int argc, char **argv)
 						//If last command in pipeline has a redirect_out_path, set pipeline output to that
 						else{
 							if(currentCommand->redirect_out_path){
+								
 								//Open the redirect_out_path file as the output for the last command
-								fileOut = open(currentCommand->redirect_in_path, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+								int fileOut = open(currentCommand->redirect_out_path, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
 								if(fileOut == -1){
+									perror("open");
 									printf("ERROR: %s: No such file or directory\n", currentCommand->redirect_out_path);
 									exit(-1);
 								}
@@ -138,47 +158,14 @@ int main(int argc, char **argv)
 				//Exit with return code 0
 				return 0;
 			}
+			//Free the pipeline memory
 			pipeline_free(my_pipeline);
 		}
 	}
 }
 
 
-/*
-int main(){
-	// struct pipeline* my_pipeline = pipeline_build("| test");
-	// struct pipeline* my_pipeline = pipeline_build("| &test");
-	// struct pipeline* my_pipeline = pipeline_build("ls|wc -l > counts.txt\n woo test &");
-	// struct pipeline* my_pipeline = pipeline_build("ls -l | test test 2 theee > woo.txt \n \t");
-	// struct pipeline* my_pipeline = pipeline_build("a b< d -ls\n| test");
-	// struct pipeline* my_pipeline = pipeline_build("arg1 <out a&\n");
-	// struct pipeline* my_pipeline = pipeline_build(" a      < -ls    > arg1\n");
-	// struct pipeline* my_pipeline = pipeline_build("a  b < arg > d | arg1 arg2&\n");
-	// struct pipeline* my_pipeline = pipeline_build("ab cd e< fg&\n");
-	// struct pipeline* my_pipeline = pipeline_build("arg1 c>a&\n");
-	// struct pipeline* my_pipeline = pipeline_build("arg1 c<ab >b\n");
-	// struct pipeline* my_pipeline = pipeline_build("arg<&");
-	// struct pipeline* my_pipeline = pipeline_build("ls");
-	struct pipeline * my_pipeline = pipeline_build("ls | ls");
-	pipeline_print(my_pipeline);
-	// // Test that a pipeline was returned
-	// TEST_ASSERT(my_pipeline != NULL);
-	// TEST_ASSERT(!my_pipeline->is_background);
-	// TEST_ASSERT(my_pipeline->commands != NULL);
-	
-	// // Test the parsed args
-	// TEST_ASSERT(strcmp("ls", my_pipeline->commands->command_args[0]) == 0);
-	// TEST_ASSERT(my_pipeline->commands->command_args[1] == NULL);
 
-	// // Test the redirect state
-	// TEST_ASSERT(my_pipeline->commands->redirect_in_path == NULL);
-	// TEST_ASSERT(my_pipeline->commands->redirect_out_path == NULL);
-
-	// // Test that there is only one parsed command in the pipeline
-	// TEST_ASSERT(my_pipeline->commands->next == NULL);
-	pipeline_free(my_pipeline);
-}
-*/
 void pipeline_print(struct pipeline* pipe){
 	if(pipe != NULL){
 		printf("Pipeline exists\n");
