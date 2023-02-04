@@ -17,10 +17,6 @@
 } while(0)
 
 
-void kill_zombies(int signum){
-	printf("Test\n");
-}
-
 //1. Main 
 void pipeline_print(struct pipeline* pipe);
 
@@ -46,19 +42,13 @@ int main(int argc, char **argv)
 		
 		//Grab the command from the user, if fgets returns NULL that means Ctrl-D => Stop the command line
 		if(fgets(command, MAX_LINE_LENGTH, stdin) == NULL){
-			//Initialize the new and old actions for sigaction
-			struct sigaction new_action, old_action;
-			new_action.sa_handler = kill_zombies;
-			sigemptyset(&new_action.sa_mask);
-			new_action.sa_flags = 0;
-
-			//Wait for the SIGCHLD signal (and replace the new action if it's not set to ignore signal)
-			sigaction(SIGCHLD, NULL, &old_action);
-			if(old_action.sa_handler != SIG_IGN){
-				sigaction(SIGCHLD, &new_action, NULL);
-			}
 
 			printf("\n");
+
+			//If want to exit, wait for ALL child processes to exit until leave code
+			while(waitpid(-1, NULL, 0) > 0){
+			}
+
 			break;
 		}
 		//Build a pipeline struct based on the user's command input
