@@ -8,7 +8,7 @@
 //Function to convert a character of the command line into a pipeline struct with dynamically allocated memory
 struct pipeline *pipeline_build(const char *command_line)
 {
-
+	printf("%s\n", command_line);
 	//Lexing: Iterate through command line characters and separate into tokens
 	char * whitespace = " \n\t\v\f\r";
 	char * delimiters = "|&<>";
@@ -54,9 +54,8 @@ struct pipeline *pipeline_build(const char *command_line)
 		int num = 0;
 		while(token != NULL){
 			//Dynamically allocate the memory
-			char *argument = (char*) malloc(sizeof(char*));
-			strcpy(argument,token);
-			command->command_args[num++] = argument;
+			command->command_args[num] = (char*) malloc(sizeof(char*));
+			strcpy(command->command_args[num++],token);
 			token = strtok_r(rest, whitespace, &rest);
 		}
 
@@ -157,17 +156,29 @@ struct pipeline *pipeline_build(const char *command_line)
 	return pipe;
 }
 
+//Helper function that recursively goes through all pipeline commands in the pipeline and frees them
 void command_free(struct pipeline_command *command){
 	//Recursively free all commands in the pipeline (first frees end and goes inward)
 	if(command->next != NULL){
+		//Recursive call, then free memory and set pointer to NULL
 		command_free(command->next);
 		free(command->next);
+		command->next = NULL;
 	}
-	if(command->redirect_in_path) free(command->redirect_in_path);
-	if(command->redirect_out_path) free(command->redirect_out_path);
+	//Free redirect in path
+	if(command->redirect_in_path){
+		free(command->redirect_in_path);
+		command->redirect_in_path = NULL;
+	}
+	//Free redirect out path
+	if(command->redirect_out_path) {
+		free(command->redirect_out_path);
+		command->redirect_out_path = NULL;
+	}
 	int index = 0;
 	while(command->command_args[index] != NULL){
-		free(command->command_args[index++]);
+		free(command->command_args[index]);
+		command->command_args[index++] = NULL;
 	}
 }
 
@@ -175,7 +186,11 @@ void command_free(struct pipeline_command *command){
 void pipeline_free(struct pipeline *pipeline)
 {
 	//Free pipeline command struct stored in the pipeline (if any)
-	if(pipeline->commands != NULL) command_free(pipeline->commands);
+	if(pipeline->commands != NULL){
+		command_free(pipeline->commands);
+		free(pipeline->commands);
+		pipeline->commands = NULL;
+	}
 	//Free pipeline struct
 	free(pipeline);
 }

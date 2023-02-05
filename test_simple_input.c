@@ -78,7 +78,6 @@ int main(int argc, char **argv)
 				
 				//Loop through each command in the pipeline
 				while(currentCommand != NULL){
-
 					//Create new child process to run each command in pipeline
 					//Parent process: Create new fork for next command in pipeline then move on to next iteration of loop
 					n = fork();
@@ -92,7 +91,7 @@ int main(int argc, char **argv)
 						}
 						//If first command in pipeline has a redirect_in_path, set pipeline input to that
 						else{
-							if(currentCommand->redirect_in_path){
+							if(currentCommand->redirect_in_path != NULL){
 								//Open the redirect_in_path file as the input for the first command (ignoring closing the file since will close when process ends)
 								int fileIn = open(currentCommand->redirect_in_path, O_RDONLY);
 								if(fileIn == -1){
@@ -110,7 +109,7 @@ int main(int argc, char **argv)
 						}
 						//If last command in pipeline has a redirect_out_path, set pipeline output to that
 						else{
-							if(currentCommand->redirect_out_path){
+							if(currentCommand->redirect_out_path != NULL){
 								
 								//Open the redirect_out_path file as the output for the last command
 								int fileOut = open(currentCommand->redirect_out_path, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
