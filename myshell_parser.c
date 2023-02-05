@@ -58,6 +58,8 @@ struct pipeline *pipeline_build(const char *command_line)
 			strcpy(command->command_args[num++],token);
 			token = strtok_r(rest, whitespace, &rest);
 		}
+		//Make it so there's always a trailing NULL (If don't do, can lead to errors if using previously freed memory)
+		command->command_args[num] = NULL;
 
 		//After getting command arguments, decide what to do next based on the token
 		if(remainingCommand != NULL){
@@ -175,12 +177,14 @@ void command_free(struct pipeline_command *command){
 		free(command->redirect_out_path);
 		command->redirect_out_path = NULL;
 	}
+	//Free the command arguments
 	int index = 0;
 	while(command->command_args[index] != NULL){
 		free(command->command_args[index]);
 		command->command_args[index++] = NULL;
 	}
 }
+
 
 //Function to free the dynamically allocated memory of an inputted pipeline structure
 void pipeline_free(struct pipeline *pipeline)
