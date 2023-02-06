@@ -48,7 +48,6 @@ int main(int argc, char **argv)
 			//If want to exit, wait for ALL child processes to exit until leave code
 			while(waitpid(-1, NULL, 0) > 0){
 			}
-
 			break;
 		}
 		//Build a pipeline struct based on the user's command input
@@ -75,7 +74,7 @@ int main(int argc, char **argv)
 				}
 				//Initialize pid_t value to keep track of last child
 				pid_t n;
-				
+
 				//Loop through each command in the pipeline
 				while(currentCommand != NULL){
 					//Create new child process to run each command in pipeline

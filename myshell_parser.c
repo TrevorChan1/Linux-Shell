@@ -8,7 +8,6 @@
 //Function to convert a character of the command line into a pipeline struct with dynamically allocated memory
 struct pipeline *pipeline_build(const char *command_line)
 {
-	printf("%s\n", command_line);
 	//Lexing: Iterate through command line characters and separate into tokens
 	char * whitespace = " \n\t\v\f\r";
 	char * delimiters = "|&<>";

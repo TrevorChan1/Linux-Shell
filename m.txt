@@ -1,2 +1,1 @@
-echo -l | ls | wc -l
-echo -l | ls | wc -l
+      15
