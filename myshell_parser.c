@@ -113,8 +113,16 @@ struct pipeline *pipeline_build(const char *command_line)
 
 					//Set redirect path to the dynamically allocated path string (based on delimiter)
 					if(delim == '>'){
+						
+						//On Mac, empty remainingCommand becomes NULL, but on Linux it has whitespace so doing this:
+						if(remainingCommand != NULL){
+							if(strtok(remainingCommand,whitespace) == NULL){
+								remainingCommand = NULL;
+							}
+						}
+
 						//If command tries to redirect out to anything other than the last command in a pipe, return NULL
-						if(remainingCommand == NULL){
+						if(strtok(remainingCommand,whitespace) == NULL){
 							command->redirect_out_path = path;
 						}
 						//If command is not last command in pipeline, print error and return NULL
@@ -161,7 +169,7 @@ struct pipeline *pipeline_build(const char *command_line)
 void command_free(struct pipeline_command *command){
 	//Recursively free all commands in the pipeline (first frees end and goes inward)
 	if(command->next != NULL){
-		//Recursive call, then free memory and set pointer to NULL
+		//Recursive call, then free memory and set
 		command_free(command->next);
 		free(command->next);
 		command->next = NULL;
