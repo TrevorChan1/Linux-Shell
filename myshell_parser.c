@@ -73,6 +73,12 @@ struct pipeline *pipeline_build(const char *command_line)
 					command = newCommand;
 					currentCommand = remainingCommand;
 
+					//Initialize other values to NULL
+					command->command_args[0] = NULL;
+					command->next = NULL;
+					command ->redirect_in_path = NULL;
+					command->redirect_out_path = NULL;
+
 					//Handle case of if & immediately follows the | (assume commands end with &)
 					if(remainingCommand[0] == '&'){
 						pipe->is_background= true;
