@@ -27,10 +27,10 @@ struct pipeline *pipeline_build(const char *command_line)
 	//Dynamically allocate memory for the output pipeline struct & initialize values
 	struct pipeline * pipe = (struct pipeline *) malloc(sizeof(struct pipeline));
 	struct pipeline_command * command = (struct pipeline_command*) malloc(sizeof(struct pipeline_command));
-	char * args = (char*) malloc(sizeof(char*));
-	command->command_args[0] = args;
+	command->command_args[0] = NULL;
 	command->redirect_in_path = NULL;
 	command->redirect_out_path = NULL;
+	command->next = NULL;
 	pipe->commands = command;
 	pipe->is_background = false;
 
