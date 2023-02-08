@@ -75,6 +75,7 @@ int main(int argc, char **argv)
 					printf("ERROR: Failed to create pipe\n");
 					return -2;
 				}
+				pipeline_print(my_pipeline);
 				//Initialize pid_t value to keep track of last child
 				pid_t n;
 

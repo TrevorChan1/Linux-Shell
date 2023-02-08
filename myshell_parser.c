@@ -8,6 +8,7 @@
 //Function to convert a character of the command line into a pipeline struct with dynamically allocated memory
 struct pipeline *pipeline_build(const char *command_line)
 {
+
 	//Lexing: Iterate through command line characters and separate into tokens
 	char * whitespace = " \n\t\v\f\r";
 	char * delimiters = "|&<>";
@@ -19,9 +20,19 @@ struct pipeline *pipeline_build(const char *command_line)
 	char * remainingCommand;
 
 	//If the command is empty, return NULL (don't create a pipeline)
-	if(strtok(com,whitespace) == NULL){
+	if(strtok(com,whitespace) == NULL || strlen(com) == 0){
 		return NULL;
 	}
+
+	//If the command starts with | or &, return NULL (don't create a pipeline and return error)
+	if(com[0] == '|' || com[0] == '&'){
+		if(com[0] == '|')
+			printf("ERROR: syntax error near unexpected token '|'\n");
+		else
+			printf("ERROR: syntax error near unexpected token '&'\n");
+		return NULL;
+	}
+
 	strcpy(com, command_line);
 
 	//Dynamically allocate memory for the output pipeline struct & initialize values
@@ -67,6 +78,12 @@ struct pipeline *pipeline_build(const char *command_line)
 				//to this next one, and set current command being looked at to the rest of the command statement
 				case '|':
 				{
+					if(command->command_args[0] == NULL){
+						printf("ERROR: syntax error near unexpected token '|'\n");
+						pipeline_free(pipe);
+						return NULL;
+					}
+
 					//Allocate memory for new pipeline command and set current command to the next one
 					struct pipeline_command * newCommand = (struct pipeline_command*) malloc(sizeof(struct pipeline_command));
 					
@@ -95,6 +112,11 @@ struct pipeline *pipeline_build(const char *command_line)
 				// If there isn't more, then set current pipeline to background true
 				case '&':
 				{
+					if(command->command_args[0] == NULL){
+						printf("ERROR: syntax error near unexpected token '&'\n");
+						pipeline_free(pipe);
+						return NULL;
+					}
 					//Assume & is at the end and just set is_background for current command to true!
 					pipe->is_background = true;
 					currentCommand = NULL;
