@@ -61,8 +61,11 @@ int main(int argc, char **argv)
 			//Parent process
 			if(m){
 				//If the current child process is NOT a background process, wait for it to finish before continuing
-				if(!my_pipeline->is_background)
+				if(!my_pipeline->is_background){
 					waitpid(m, 0,0);
+					//Free the pipeline memory
+					pipeline_free(my_pipeline);
+				}
 			}
 			//Child process
 			else{
@@ -146,8 +149,6 @@ int main(int argc, char **argv)
 				//Exit with return code 0
 				return 0;
 			}
-			//Free the pipeline memory
-			pipeline_free(my_pipeline);
 		}
 	}
 }

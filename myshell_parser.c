@@ -52,8 +52,8 @@ struct pipeline *pipeline_build(const char *command_line)
 		token = strtok_r(currentCommand, whitespace, &rest);
 		int num = 0;
 		while(token != NULL){
-			//Dynamically allocate the memory
-			command->command_args[num] = (char*) malloc(sizeof(char*));
+			//Dynamically allocate the memory, each command gets allocated MAX_ARG_LENGTH + 1 characters
+			command->command_args[num] = (char*) malloc((MAX_ARGV_LENGTH + 1)*sizeof(char));
 			strcpy(command->command_args[num++],token);
 			token = strtok_r(rest, whitespace, &rest);
 		}
@@ -69,15 +69,17 @@ struct pipeline *pipeline_build(const char *command_line)
 				{
 					//Allocate memory for new pipeline command and set current command to the next one
 					struct pipeline_command * newCommand = (struct pipeline_command*) malloc(sizeof(struct pipeline_command));
+					
+					//Initialize unused values to NULL
+					newCommand->command_args[0] = NULL;
+					newCommand->next = NULL;
+					newCommand ->redirect_in_path = NULL;
+					newCommand->redirect_out_path = NULL;
+
+					//Set newly allocated command to next command
 					command->next = newCommand;
 					command = newCommand;
 					currentCommand = remainingCommand;
-
-					//Initialize other values to NULL
-					command->command_args[0] = NULL;
-					command->next = NULL;
-					command ->redirect_in_path = NULL;
-					command->redirect_out_path = NULL;
 
 					//Handle case of if & immediately follows the | (assume commands end with &)
 					if(remainingCommand[0] == '&'){
