@@ -48,6 +48,10 @@ struct pipeline *pipeline_build(const char *command_line)
 	//Grab first string delimited by a non-word token
 	currentCommand = strtok_r(com, delimiters, &remainingCommand);
 	int currentLen = 0;
+	bool firstCmdEmpty = false;
+
+	if(com[0] == '|' || com[0] == '&' || com[0] == '>' || com[0] == '<')
+		firstCmdEmpty = true;
 	
 	//Loop through segments delimited by non-word token until empty
 	while(currentCommand != NULL){
@@ -55,24 +59,35 @@ struct pipeline *pipeline_build(const char *command_line)
 		//Separate the currentCommand into word tokens (left side should always be a command)
 		char* token;
 		char* rest;
+		char delim;
 		if(currentLen > 0)
 			currentLen += 1;
-		currentLen += strlen(currentCommand);
-		char delim = command_line[currentLen];
 		
-		token = strtok_r(currentCommand, whitespace, &rest);
-		int num = 0;
-		while(token != NULL){
-			//Dynamically allocate the memory, each command gets allocated MAX_ARG_LENGTH + 1 characters
-			command->command_args[num] = (char*) malloc((MAX_ARGV_LENGTH + 1)*sizeof(char));
-			strcpy(command->command_args[num++],token);
-			token = strtok_r(rest, whitespace, &rest);
-		}
-		//Make it so there's always a trailing NULL (If don't do, can lead to errors if using previously freed memory)
-		command->command_args[num] = NULL;
+		if(firstCmdEmpty){
+			currentLen += strlen(currentCommand);
+			delim = command_line[currentLen];
+			
 
+			token = strtok_r(currentCommand, whitespace, &rest);
+			int num = 0;
+			while(token != NULL){
+				//Dynamically allocate the memory, each command gets allocated MAX_ARG_LENGTH + 1 characters to include \0
+				command->command_args[num] = (char*) malloc((MAX_ARGV_LENGTH + 1)*sizeof(char));
+				strcpy(command->command_args[num++],token);
+				token = strtok_r(rest, whitespace, &rest);
+			}
+			//Make it so there's always a trailing NULL (If don't do, can lead to errors if using previously freed memory)
+			command->command_args[num] = NULL;
+		}
 		//After getting command arguments, decide what to do next based on the token
 		if(remainingCommand != NULL){
+			if(currentLen < strlen(command_line)-1){
+				if(delim == command_line[currentLen+ 1]){
+					printf("ERROR: syntax error near unexpected token '%c%c'\n", delim, command_line[currentLen+1]);
+					pipeline_free(pipe);
+					return NULL;
+				}
+			}
 			switch(delim){
 				//Case |: Dynamically allocate a new pipeline command, set current pipeline command to point
 				//to this next one, and set current command being looked at to the rest of the command statement
@@ -135,7 +150,7 @@ struct pipeline *pipeline_build(const char *command_line)
 					//If empty, then return nothing and print an error
 					if(p == NULL){
 						pipeline_free(pipe);
-						printf("ERROR: syntax error near unexpected token '%s'\n",p);
+						printf("ERROR: syntax error near unexpected token '(null)'\n");
 						return NULL;
 					}
 					char *path = (char*) malloc(sizeof(char*));
