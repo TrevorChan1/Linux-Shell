@@ -87,8 +87,7 @@ int main(int argc, char **argv)
 
 					//Child Process: Set read and write as needed then execute command
 					if(n == 0){
-						int fileIn = -1;
-						int fileOut = -1;
+						
 						//If current command is not the first in the pipeline, set read from stdin to pipe read
 						if(currentCommand != my_pipeline->commands){
 							dup2(pipeline[0], STDIN_FILENO); //Replace stdin with pipe read
@@ -97,17 +96,17 @@ int main(int argc, char **argv)
 						else{
 							if(currentCommand->redirect_in_path != NULL){
 								//Open the redirect_in_path file as the input for the first command (ignoring closing the file since will close when process ends)
-								fileIn = open(currentCommand->redirect_in_path, O_RDONLY);
+								int fileIn = open(currentCommand->redirect_in_path, O_RDONLY);
 								if(fileIn == -1){
 									printf("ERROR: %s: No such file or directory\n", currentCommand->redirect_in_path);
 									exit(-1);
 								}
 								//Replace stdin with reading that file
 								dup2(fileIn, STDIN_FILENO);
+								close(fileIn);
 							}
 						}
-						if(fileIn != -1)
-							close(fileIn);
+						
 						//If current command is not the last in the pipeline, set read from stdout to pipe write
 						if(currentCommand->next != NULL){
 							dup2(pipeline[1], STDOUT_FILENO);	//Replace stdout with pipe write
@@ -124,15 +123,13 @@ int main(int argc, char **argv)
 								}
 								//Replace stdin with reading that file
 								dup2(fileOut, STDOUT_FILENO);
+								close(fileOut);
 							}
 						}
 
 						//Close any part of the pipeline that is not being used
 						close(pipeline[1]);
 						close(pipeline[0]);
-						
-						if(fileOut != -1)
-							close(fileOut);
 
 						//Execute command, print error message if not a correct command
 						if(execvp(currentCommand->command_args[0], currentCommand->command_args)){

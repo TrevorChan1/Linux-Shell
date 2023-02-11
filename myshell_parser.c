@@ -49,9 +49,10 @@ struct pipeline *pipeline_build(const char *command_line)
 	currentCommand = strtok_r(com, delimiters, &remainingCommand);
 	int currentLen = 0;
 	bool firstCmdEmpty = false;
+	bool sameCommand = false;
 
 	//Deal with the case where the first character is a special token (strtok won't catch it)
-	if(com[0] == '|' || com[0] == '&' || com[0] == '>' || com[0] == '<')
+	if(command_line[0] == '|' || command_line[0] == '&' || command_line[0] == '>' || command_line[0] == '<')
 		firstCmdEmpty = true;
 	
 	//Loop through segments delimited by non-word token until empty
@@ -63,20 +64,24 @@ struct pipeline *pipeline_build(const char *command_line)
 		char delim;
 		if(currentLen > 0)
 			currentLen += 1;
-		
+
 		//Only parse through the characters in the currentCommand if it's not the first command and the first character isn't a special token
 		if(!firstCmdEmpty){
 			currentLen += strlen(currentCommand);
-			token = strtok_r(currentCommand, whitespace, &rest);
-			int num = 0;
-			while(token != NULL){
-				//Dynamically allocate the memory, each command gets allocated MAX_ARG_LENGTH + 1 characters to include \0
-				command->command_args[num] = (char*) malloc((MAX_ARGV_LENGTH + 1)*sizeof(char));
-				strcpy(command->command_args[num++],token);
-				token = strtok_r(rest, whitespace, &rest);
+			//Only parse through command if in a new command (in the cases of multiple special tokens in same command)
+			if(!sameCommand){
+				token = strtok_r(currentCommand, whitespace, &rest);
+				int num = 0;
+				while(token != NULL){
+					//Dynamically allocate the memory, each command gets allocated MAX_ARG_LENGTH + 1 characters to include \0
+					command->command_args[num] = (char*) malloc((MAX_ARGV_LENGTH + 1)*sizeof(char));
+					strcpy(command->command_args[num++],token);
+					token = strtok_r(rest, whitespace, &rest);
+				}
+				//Make it so there's always a trailing NULL (If don't do, can lead to errors if using previously freed memory)
+				command->command_args[num] = NULL;
+				sameCommand = true;
 			}
-			//Make it so there's always a trailing NULL (If don't do, can lead to errors if using previously freed memory)
-			command->command_args[num] = NULL;
 		}
 		else{
 			firstCmdEmpty = false;
@@ -119,6 +124,9 @@ struct pipeline *pipeline_build(const char *command_line)
 					command->next = newCommand;
 					command = newCommand;
 					currentCommand = remainingCommand;
+
+					//Set it to parse through command arguments
+					sameCommand = false;
 
 					//Handle case of if & immediately follows the | (assume commands end with &)
 					if(remainingCommand[0] == '&'){
