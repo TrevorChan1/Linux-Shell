@@ -55,7 +55,6 @@ int main(int argc, char **argv)
 
 		//If a valid pipeline was created, then fork and execute the command
 		if(my_pipeline){
-			pipeline_print(my_pipeline);
 			pid_t m = fork();
 			struct pipeline_command * currentCommand = my_pipeline->commands;
 			//Parent process

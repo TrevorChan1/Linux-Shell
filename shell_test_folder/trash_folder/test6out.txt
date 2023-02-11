@@ -1,0 +1,3 @@
+ERROR: syntax error near unexpected token '&'
+ERROR: syntax error near unexpected token '&&'
+
