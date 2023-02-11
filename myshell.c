@@ -55,7 +55,7 @@ int main(int argc, char **argv)
 
 		//If a valid pipeline was created, then fork and execute the command
 		if(my_pipeline){
-
+			pipeline_print(my_pipeline);
 			pid_t m = fork();
 			struct pipeline_command * currentCommand = my_pipeline->commands;
 			//Parent process
@@ -87,7 +87,8 @@ int main(int argc, char **argv)
 
 					//Child Process: Set read and write as needed then execute command
 					if(n == 0){
-						
+						int fileIn = -1;
+						int fileOut = -1;
 						//If current command is not the first in the pipeline, set read from stdin to pipe read
 						if(currentCommand != my_pipeline->commands){
 							dup2(pipeline[0], STDIN_FILENO); //Replace stdin with pipe read
@@ -96,7 +97,7 @@ int main(int argc, char **argv)
 						else{
 							if(currentCommand->redirect_in_path != NULL){
 								//Open the redirect_in_path file as the input for the first command (ignoring closing the file since will close when process ends)
-								int fileIn = open(currentCommand->redirect_in_path, O_RDONLY);
+								fileIn = open(currentCommand->redirect_in_path, O_RDONLY);
 								if(fileIn == -1){
 									printf("ERROR: %s: No such file or directory\n", currentCommand->redirect_in_path);
 									exit(-1);
@@ -105,7 +106,8 @@ int main(int argc, char **argv)
 								dup2(fileIn, STDIN_FILENO);
 							}
 						}
-						
+						if(fileIn != -1)
+							close(fileIn);
 						//If current command is not the last in the pipeline, set read from stdout to pipe write
 						if(currentCommand->next != NULL){
 							dup2(pipeline[1], STDOUT_FILENO);	//Replace stdout with pipe write
@@ -117,7 +119,6 @@ int main(int argc, char **argv)
 								//Open the redirect_out_path file as the output for the last command
 								int fileOut = open(currentCommand->redirect_out_path, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
 								if(fileOut == -1){
-									perror("open");
 									printf("ERROR: %s: No such file or directory\n", currentCommand->redirect_out_path);
 									exit(-1);
 								}
@@ -129,6 +130,9 @@ int main(int argc, char **argv)
 						//Close any part of the pipeline that is not being used
 						close(pipeline[1]);
 						close(pipeline[0]);
+						
+						if(fileOut != -1)
+							close(fileOut);
 
 						//Execute command, print error message if not a correct command
 						if(execvp(currentCommand->command_args[0], currentCommand->command_args)){

@@ -50,6 +50,7 @@ struct pipeline *pipeline_build(const char *command_line)
 	int currentLen = 0;
 	bool firstCmdEmpty = false;
 
+	//Deal with the case where the first character is a special token (strtok won't catch it)
 	if(com[0] == '|' || com[0] == '&' || com[0] == '>' || com[0] == '<')
 		firstCmdEmpty = true;
 	
@@ -63,11 +64,9 @@ struct pipeline *pipeline_build(const char *command_line)
 		if(currentLen > 0)
 			currentLen += 1;
 		
-		if(firstCmdEmpty){
+		//Only parse through the characters in the currentCommand if it's not the first command and the first character isn't a special token
+		if(!firstCmdEmpty){
 			currentLen += strlen(currentCommand);
-			delim = command_line[currentLen];
-			
-
 			token = strtok_r(currentCommand, whitespace, &rest);
 			int num = 0;
 			while(token != NULL){
@@ -79,6 +78,14 @@ struct pipeline *pipeline_build(const char *command_line)
 			//Make it so there's always a trailing NULL (If don't do, can lead to errors if using previously freed memory)
 			command->command_args[num] = NULL;
 		}
+		else{
+			firstCmdEmpty = false;
+			remainingCommand = currentCommand;
+		}
+		
+		//Set delimiter used to the character
+		delim = command_line[currentLen];
+
 		//After getting command arguments, decide what to do next based on the token
 		if(remainingCommand != NULL){
 			if(currentLen < strlen(command_line)-1){
@@ -153,13 +160,14 @@ struct pipeline *pipeline_build(const char *command_line)
 						printf("ERROR: syntax error near unexpected token '(null)'\n");
 						return NULL;
 					}
-					char *path = (char*) malloc(sizeof(char*));
+					//Initialize path to be of length max_argv_length +1 since file path can be length of largest argv
+					char *path = (char*) malloc((MAX_ARGV_LENGTH + 1)*sizeof(char));
 					strcpy(path,p);
 
 					//Set redirect path to the dynamically allocated path string (based on delimiter)
 					if(delim == '>'){
 						
-						//On Mac, empty remainingCommand becomes NULL, but on Linux it has whitespace so doing this:
+						//On Mac, empty remainingComsmand becomes NULL, but on Linux it has whitespace so doing this:
 						if(remainingCommand != NULL){
 							if(strtok(remainingCommand,whitespace) == NULL){
 								remainingCommand = NULL;
