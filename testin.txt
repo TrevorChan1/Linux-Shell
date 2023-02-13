@@ -1,0 +1,16 @@
+ls
+ls|grep     pipe
+ls| grep pipe|wc
+ls > rdls.txt
+grep myshell< rdls.txt >rdgrep.txt
+ps
+whoami
+ls >><<
+ps
+ps
+ls|grep myshell
+ls|grep myshell|wc &
+whoami
+pwd
+ls|grep pipe >file.txt| wc
+grep myshell <doesnotexist.txt

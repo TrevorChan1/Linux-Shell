@@ -68,28 +68,41 @@ int main(int argc, char **argv)
 			}
 			//Child process
 			else{
-				//Initialize pipeline of commands
-				int pipeline[2];
-				if(pipe(pipeline) == -1){
-					printf("ERROR: Failed to create pipe\n");
-					return -2;
-				}
 
-				//Initialize pid_t value to keep track of last child
+				//Initialize pipeline of commands
+				int *prevPipe = NULL;
+				int *currPipe = NULL;
+
+				//Initialize pid_t value to keep track of last child, and currentPipe
 				pid_t n;
 
 				//Loop through each command in the pipeline
 				while(currentCommand != NULL){
+
+					//Create the new pipeline
+					if(currentCommand->next != NULL){
+						if(pipe(currPipe) == -1){
+							printf("ERROR: Failed to create pipe\n");
+							exit(-2);
+						}
+					}
+
 					//Create new child process to run each command in pipeline
 					//Parent process: Create new fork for next command in pipeline then move on to next iteration of loop
 					n = fork();
 
 					//Child Process: Set read and write as needed then execute command
 					if(n == 0){
-						
-						//If current command is not the first in the pipeline, set read from stdin to pipe read
+
+						//File Read: If current command is not the first in the pipeline, set read from stdin to pipe read
 						if(currentCommand != my_pipeline->commands){
-							dup2(pipeline[0], STDIN_FILENO); //Replace stdin with pipe read
+							if(dup2(prevPipe[0], STDIN_FILENO) < 0){ //Replace stdin with pipe read
+								printf("ERROR: Failed to set up read pipe\n");
+								exit(-3);
+							}
+							//Close previous command pipe
+							close(prevPipe[0]);
+							close(prevPipe[1]);
 						}
 						//If first command in pipeline has a redirect_in_path, set pipeline input to that
 						else{
@@ -105,10 +118,16 @@ int main(int argc, char **argv)
 								close(fileIn);
 							}
 						}
-						
-						//If current command is not the last in the pipeline, set read from stdout to pipe write
+
+						//File Write: If current command is not the last in the pipeline, set read from stdout to pipe write
 						if(currentCommand->next != NULL){
-							dup2(pipeline[1], STDOUT_FILENO);	//Replace stdout with pipe write
+							if(dup2(currPipe[1], STDOUT_FILENO) < 0){	//Replace stdout with pipe write
+								printf("ERROR: Failed to set up read pipe\n");
+								exit(-3);
+							}
+							//Close current command pipe
+							close(currPipe[0]);
+							close(currPipe[1]);
 						}
 						//If last command in pipeline has a redirect_out_path, set pipeline output to that
 						else{
@@ -126,25 +145,26 @@ int main(int argc, char **argv)
 							}
 						}
 
-						//Close any part of the pipeline that is not being used
-						close(pipeline[1]);
-						close(pipeline[0]);
-
 						//Execute command, print error message if not a correct command
 						if(execvp(currentCommand->command_args[0], currentCommand->command_args)){
 							printf("ERROR: %s: No such file or directory\n", currentCommand->command_args[0]);
-							return -1;
+							exit(-1);
 						}
-						
+						exit(1);
 					}
 
 					//Parent process: Wait for child process to end then set currentCommand to next in pipeline
 					currentCommand = currentCommand->next;
-					
+					if(prevPipe != NULL){
+						close(prevPipe[0]);
+						close(prevPipe[1]);
+					}
+					prevPipe = currPipe;
+
 				}
-				//After command pipeline is done executing, close pipeline and wait for commands to finish running
-				close(pipeline[0]);
-				close(pipeline[1]);
+				//After command pipeline is done executing, close last [o[e;ome]]
+				close(prevPipe[0]);
+				close(prevPipe[1]);
 				waitpid(n,0,0);
 
 				//Exit with return code 0
