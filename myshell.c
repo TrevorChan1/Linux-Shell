@@ -69,7 +69,7 @@ int main(int argc, char **argv)
 			//Child process
 			else{
 
-				//Initialize pipeline of commands
+				//Initialize pipeline of commands, set all fid pointers to -1 at first
 				int prevPipe[2] = {-1, -1};
 				int currPipe[2] = {-1, -1};
 
@@ -79,7 +79,7 @@ int main(int argc, char **argv)
 				//Loop through each command in the pipeline
 				while(currentCommand != NULL){
 
-					//Create the new pipeline
+					//Create the new pipeline, print and return error if fails
 					if(currentCommand->next != NULL){
 						if(pipe(currPipe) == -1){
 							printf("ERROR: Failed to create pipe\n");
@@ -153,7 +153,7 @@ int main(int argc, char **argv)
 						exit(1);
 					}
 
-					//Parent process: Wait for child process to end then set currentCommand to next in pipeline
+					//Parent process: Move onto next command, close previous pipe, and set current pipe to previous
 					currentCommand = currentCommand->next;
 					if(prevPipe[0] != -1){
 						close(prevPipe[0]);
@@ -163,7 +163,7 @@ int main(int argc, char **argv)
 					prevPipe[1] = currPipe[1];
 
 				}
-				//After command pipeline is done executing, close last [o[e;ome]]
+				//After command pipeline is done executing, close the last pipe and wait for child to finish
 				close(prevPipe[0]);
 				close(prevPipe[1]);
 				waitpid(n,0,0);
