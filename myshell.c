@@ -82,7 +82,7 @@ int main(int argc, char **argv)
 					//Create the new pipeline, print and return error if fails
 					if(currentCommand->next != NULL){
 						if(pipe(currPipe) == -1){
-							printf("ERROR: Failed to create pipe\n");
+							fprintf(stderr, "ERROR: Failed to create pipe\n");
 							exit(-2);
 						}
 					}
@@ -97,7 +97,7 @@ int main(int argc, char **argv)
 						//File Read: If current command is not the first in the pipeline, set read from stdin to pipe read
 						if(currentCommand != my_pipeline->commands){
 							if(dup2(prevPipe[0], STDIN_FILENO) < 0){ //Replace stdin with pipe read
-								printf("ERROR: Failed to set up read pipe\n");
+								fprintf(stderr, "ERROR: Failed to set up read pipe\n");
 								exit(-3);
 							}
 							//Close previous command pipe
@@ -110,7 +110,7 @@ int main(int argc, char **argv)
 								//Open the redirect_in_path file as the input for the first command (ignoring closing the file since will close when process ends)
 								int fileIn = open(currentCommand->redirect_in_path, O_RDONLY);
 								if(fileIn == -1){
-									printf("ERROR: %s: No such file or directory\n", currentCommand->redirect_in_path);
+									fprintf(stderr, "ERROR: %s: No such file or directory\n", currentCommand->redirect_in_path);
 									exit(-1);
 								}
 								//Replace stdin with reading that file
@@ -122,7 +122,7 @@ int main(int argc, char **argv)
 						//File Write: If current command is not the last in the pipeline, set read from stdout to pipe write
 						if(currentCommand->next != NULL){
 							if(dup2(currPipe[1], STDOUT_FILENO) < 0){	//Replace stdout with pipe write
-								printf("ERROR: Failed to set up read pipe\n");
+								fprintf(stderr, "ERROR: Failed to set up read pipe\n");
 								exit(-3);
 							}
 							//Close current command pipe
@@ -136,7 +136,7 @@ int main(int argc, char **argv)
 								//Open the redirect_out_path file as the output for the last command
 								int fileOut = open(currentCommand->redirect_out_path, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
 								if(fileOut == -1){
-									printf("ERROR: %s: No such file or directory\n", currentCommand->redirect_out_path);
+									fprintf(stderr, "ERROR: %s: No such file or directory\n", currentCommand->redirect_out_path);
 									exit(-1);
 								}
 								//Replace stdin with reading that file
@@ -147,7 +147,7 @@ int main(int argc, char **argv)
 
 						//Execute command, print error message if not a correct command
 						if(execvp(currentCommand->command_args[0], currentCommand->command_args)){
-							printf("ERROR: %s: No such file or directory\n", currentCommand->command_args[0]);
+							fprintf(stderr, "ERROR: %s: No such file or directory\n", currentCommand->command_args[0]);
 							exit(-1);
 						}
 						exit(1);
