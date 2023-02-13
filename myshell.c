@@ -70,8 +70,8 @@ int main(int argc, char **argv)
 			else{
 
 				//Initialize pipeline of commands
-				int *prevPipe = NULL;
-				int *currPipe = NULL;
+				int prevPipe[2] = {-1, -1};
+				int currPipe[2] = {-1, -1};
 
 				//Initialize pid_t value to keep track of last child, and currentPipe
 				pid_t n;
@@ -155,11 +155,12 @@ int main(int argc, char **argv)
 
 					//Parent process: Wait for child process to end then set currentCommand to next in pipeline
 					currentCommand = currentCommand->next;
-					if(prevPipe != NULL){
+					if(prevPipe[0] != -1){
 						close(prevPipe[0]);
 						close(prevPipe[1]);
 					}
-					prevPipe = currPipe;
+					prevPipe[0] = currPipe[0];
+					prevPipe[1] = currPipe[1];
 
 				}
 				//After command pipeline is done executing, close last [o[e;ome]]
