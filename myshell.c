@@ -23,10 +23,8 @@ void pipeline_print(struct pipeline* pipe);
 //Signal handler to collect zombies at each SIGCHLD
 void sigchldHandler(int sig){
 	//After any child exits, wait for all children to finish (reap all children)
-	while(waitpid(-1, 0, 0) > 0){
-
-	}
-	printf("here\n");
+	int status;
+	waitpid(-1, &status, WNOHANG);
 }
 
 //Main function of shell
