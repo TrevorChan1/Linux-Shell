@@ -17,14 +17,33 @@
 } while(0)
 
 
-//1. Main 
+//Print function for debugging
 void pipeline_print(struct pipeline* pipe);
 
+//Signal handler to collect zombies at each SIGCHLD
+void sigchldHandler(int sig){
+	//After any child exits, wait for all children to finish (reap all children)
+	while(waitpid(-1, 0, 0) > 0){
+
+	}
+	printf("here\n");
+}
+
+//Main function of shell
 int main(int argc, char **argv)
 {
 	//Initialization
 	bool print_shell = true;
 	char command[MAX_LINE_LENGTH];
+
+	//Set SIGCHLD sigaction to prevent zombie processes
+	struct sigaction sigchldAction;
+	
+	memset(&sigchldAction, 0, sizeof(sigchldAction));
+	sigemptyset(&sigchldAction.sa_mask);
+	sigchldAction.sa_flags = 0;
+	sigchldAction.sa_handler = sigchldHandler;
+	sigaction(SIGCHLD, &sigchldAction, NULL);
 
 	//See if -n is an argument
 	if(argc > 1){
@@ -42,13 +61,8 @@ int main(int argc, char **argv)
 		
 		//Grab the command from the user, if fgets returns NULL that means Ctrl-D => Stop the command line
 		if(fgets(command, MAX_LINE_LENGTH, stdin) == NULL){
-
 			printf("\n");
-
-			//If want to exit, wait for ALL child processes to exit until leave code
-			while(waitpid(-1, NULL, 0) > 0){
-			}
-			break;
+			exit(0);
 		}
 		//Build a pipeline struct based on the user's command input
 		struct pipeline* my_pipeline = pipeline_build(command);
